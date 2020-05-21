@@ -25,6 +25,7 @@ Pranav Cherukupalli <cherukupallip@gmail.com>
 #include "pixels.h"
 
 #include <M5Stack.h>
+#include <WiFi.h>
 
 
 #define BUTTON_PIN_BITMASK 0x8000000000 // 2^33 in hex
@@ -58,7 +59,7 @@ void setup(){
   fnp.update();
   bootCount++;
   
-  if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT1) {
+  if(1) { //esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) { // == ESP_SLEEP_WAKEUP_EXT1) {
     bat1.enableBatteryLevel();
     
     M5.begin();
@@ -68,14 +69,21 @@ void setup(){
     M5.Lcd.setTextColor(GREEN , BLACK);
     M5.Lcd.setTextSize(2);
     M5.Lcd.setCursor(10, 20);
-    M5.Lcd.printf("Boot cnt: %d", bootCount);
-    M5.Lcd.setCursor(160, 20);
+    M5.Lcd.printf("Cnt: %d", bootCount);
+    M5.Lcd.setCursor(200, 20);
     M5.Lcd.printf("BAT: %d", bat1.getBatteryLevel());
   
   
     //Print the wakeup reason for ESP32
     print_wakeup_reason();
-  
+
+    WiFi.begin("NCC-1701N", "");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(10);
+    }
+    M5.Lcd.setCursor(10, 120);
+    M5.Lcd.printf("IP: %d .. %d",WiFi.localIP()[0], WiFi.localIP()[3]);
     delay(3000);
   }
   
@@ -94,7 +102,7 @@ void setup(){
   */
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_33,1); //1 = High, 0 = Low
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_39,0); //1 = High, 0 = Low
-  esp_sleep_enable_timer_wakeup(10000000);  // 5s
+  esp_sleep_enable_timer_wakeup(30000000);  // 30s
   
   //If you were to use ext1, you would use it like
   //esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
