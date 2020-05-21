@@ -78,11 +78,13 @@ void setup(){
     print_wakeup_reason();
 
     WiFi.begin("NCC-1701N", "");
-
+    //connects in about 1sec
     while (WiFi.status() != WL_CONNECTED) {
         delay(10);
     }
     M5.Lcd.setCursor(10, 120);
+    //shows only the important part of IP address
+    //ping this addres from a computer on the same network and see when it wakes up
     M5.Lcd.printf("IP: %d .. %d",WiFi.localIP()[0], WiFi.localIP()[3]);
     delay(3000);
   }
