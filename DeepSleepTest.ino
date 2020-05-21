@@ -20,21 +20,26 @@ source. They are pins: 0,2,4,12-15,25-27,32-39.
 Author:
 Pranav Cherukupalli <cherukupallip@gmail.com>
 */
-#include <M5Stack.h>
+
+#include "FireBatteryLevel.h"
 #include "pixels.h"
+
+#include <M5Stack.h>
+
 
 #define BUTTON_PIN_BITMASK 0x8000000000 // 2^33 in hex
 
-RTC_DATA_ATTR int bootCount = 0;
-RTC_SLOW_ATTR int bootCount1 = 0;
+//RTC_DATA_ATTR int bootCount = 0;
+RTC_SLOW_ATTR int bootCount = 0;
 FireNeopixels fnp;
+FireBatteryLevel bat1;
 
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
 
   wakeup_reason = esp_sleep_get_wakeup_cause();
-  M5.Lcd.setCursor(10, 50);
+  M5.Lcd.setCursor(10, 60);
   switch(wakeup_reason)
   {
     case ESP_SLEEP_WAKEUP_EXT0 : M5.Lcd.printf("Wakeup caused by external signal using RTC_IO"); break;
@@ -48,27 +53,33 @@ void print_wakeup_reason(){
 }
 
 void setup(){
-  M5.begin();
-  fnp.leds[0] = CRGB(100, 0, 0);
-
-  fnp.update();
   
-  M5.Lcd.setBrightness(10);
-  //M5.Lcd.fillScreen(BLACK);
-  M5.Lcd.setTextColor(GREEN , BLACK);
-  M5.Lcd.setTextSize(2);
-  M5.Lcd.setCursor(10, 20);
-  M5.Lcd.printf("Boot cnt: %d", bootCount1);
-
-  //Increment boot number and print it every reboot
-  ++bootCount1;
-
-  //Print the wakeup reason for ESP32
-  print_wakeup_reason();
-
-  delay(3000);
+  fnp.leds[0] = CRGB(100, 0, 0);
+  fnp.update();
+  bootCount++;
+  
+  if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT1) {
+    bat1.enableBatteryLevel();
+    
+    M5.begin();
+    
+    M5.Lcd.setBrightness(10);
+    //M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setTextColor(GREEN , BLACK);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setCursor(10, 20);
+    M5.Lcd.printf("Boot cnt: %d", bootCount);
+    M5.Lcd.setCursor(160, 20);
+    M5.Lcd.printf("BAT: %d", bat1.getBatteryLevel());
+  
+  
+    //Print the wakeup reason for ESP32
+    print_wakeup_reason();
+  
+    delay(3000);
+  }
+  
   fnp.leds[0] = CRGB(0, 0, 10);
-
   fnp.update();
 
   /*
@@ -83,14 +94,14 @@ void setup(){
   */
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_33,1); //1 = High, 0 = Low
   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_39,0); //1 = High, 0 = Low
-  esp_sleep_enable_timer_wakeup(5000000);  // 5s
+  esp_sleep_enable_timer_wakeup(10000000);  // 5s
   
   //If you were to use ext1, you would use it like
   //esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
   esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ALL_LOW);
   //Go to sleep now
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+  //esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
   esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
   esp_deep_sleep_start();
