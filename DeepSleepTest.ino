@@ -35,6 +35,8 @@ RTC_SLOW_ATTR int bootCount = 0;
 FireNeopixels fnp;
 FireBatteryLevel bat1;
 
+const char* password = "";
+
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -54,12 +56,12 @@ void print_wakeup_reason(){
 }
 
 void setup(){
-  
-  fnp.leds[0] = CRGB(100, 0, 0);
+  int failCount;
+  fnp.leds[0] = CRGB(40, 0, 30);
   fnp.update();
   bootCount++;
   
-  if(1) { //esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) { // == ESP_SLEEP_WAKEUP_EXT1) {
+  if(esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) { // == ESP_SLEEP_WAKEUP_EXT1) {
     bat1.enableBatteryLevel();
     
     M5.begin();
@@ -77,10 +79,16 @@ void setup(){
     //Print the wakeup reason for ESP32
     print_wakeup_reason();
 
-    WiFi.begin("NCC-1701N", "");
+    WiFi.begin("NCC-1701N", password);
     //connects in about 1sec
-    while (WiFi.status() != WL_CONNECTED) {
+    failCount = 0;
+    while (WiFi.status() != WL_CONNECTED && failCount < 200) {
         delay(10);
+        failCount++;
+    }
+    if(failCount == 200) {
+      fnp.leds[0] = CRGB(0, 0, 1);
+      goto WiFifail;
     }
     M5.Lcd.setCursor(10, 120);
     //shows only the important part of IP address
@@ -88,8 +96,25 @@ void setup(){
     M5.Lcd.printf("IP: %d .. %d",WiFi.localIP()[0], WiFi.localIP()[3]);
     delay(3000);
   }
+  else
+  {
+    WiFi.begin("NCC-1701N", password);
+    //connects in about 1sec
+    failCount = 0;
+    while (WiFi.status() != WL_CONNECTED && failCount < 200) {
+        delay(10);
+        failCount++;
+    }
+    if(failCount == 200) {
+      fnp.leds[0] = CRGB(0, 0, 1);
+      goto WiFifail;
+    }  
+    //this is not enough time to send a response to ping
+    delay(100);
+  }
   
-  fnp.leds[0] = CRGB(0, 0, 10);
+  fnp.leds[0] = CRGB(0, 1, 0);
+  WiFifail:
   fnp.update();
 
   /*
