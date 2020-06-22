@@ -24,18 +24,17 @@ Pranav Cherukupalli <cherukupallip@gmail.com>
 //#include "FireBatteryLevel.h"
 #include "pixels.h"
 
-//#include <esp_wifi.h>
-//#include <esp_bt.h>
 #include <driver/rtc_io.h>
 #include <driver/adc.h>
 
 #include <M5Stack.h>
 
 
-#define BUTTON_PIN_BITMASK 0x8000000000 // 2^33 in hex
+#define BUTTON_PIN_BITMASK 0x4000000000 // GPIO38
 
 //RTC_DATA_ATTR int bootCount = 0;
-RTC_SLOW_ATTR int bootCount = 0;
+//RTC_SLOW_ATTR int bootCount = 0;
+int bootCount = 0;
 //FireNeopixels fnp;
 //FireBatteryLevel bat1;
 
@@ -60,15 +59,17 @@ void print_wakeup_reason(){
 
 
 #define IP5306_ADDR 0x75
-#define IP5306_REG_SYS_CTL0 0x00
-#define IP5306_REG_SYS_CTL1 0x01
-#define IP5306_REG_SYS_CTL2 0x02
+#define IP5306_REG_SYS_CTL0 0x00  // default 190
+#define IP5306_REG_SYS_CTL1 0x01  // default 29
+#define IP5306_REG_SYS_CTL2 0x02  // default 96
 
 
 void setup() {
+  uint8_t reg = 0;
+  
   bootCount++;
   M5.begin();
-  //Wire.begin();
+  Wire.begin();
   
   M5.Lcd.setBrightness(100);
   M5.Lcd.setTextSize(2);
@@ -78,46 +79,52 @@ void setup() {
   M5.Lcd.setCursor(160, 20);
   //M5.Lcd.printf("BAT: %d", M5.Power.getBatteryLevel());
   print_wakeup_reason();
-  
 
+  Wire.beginTransmission(IP5306_ADDR);
+  Wire.write(IP5306_REG_SYS_CTL2);
+  //Wire.write(0b110111);
+  Wire.write(96);//55);
+  Wire.endTransmission();
+  
+  //read IP306 registers
+  Wire.beginTransmission(IP5306_ADDR);
+  Wire.write(IP5306_REG_SYS_CTL0);
+  if (Wire.endTransmission(false) == 0 && Wire.requestFrom(IP5306_ADDR, 3)) {
+    reg = Wire.read();
+    M5.Lcd.setCursor(10, 120);
+    M5.Lcd.printf("Reg: %d", reg);
+    reg = Wire.read();
+    M5.Lcd.setCursor(10, 140);
+    M5.Lcd.printf("Reg: %d", reg);
+    reg = Wire.read();
+    M5.Lcd.setCursor(10, 160);
+    M5.Lcd.printf("Reg: %d", reg);
+  }
+  
+  
+  delay(3000);
+}
+
+void deepSleep_simple() {
   M5.Power.begin();
   M5.Power.setWakeupButton(BUTTON_A_PIN);
-  //M5.Power.setPowerBoostKeepOn(true);
-  /*Wire.beginTransmission(IP5306_ADDR);
-  Wire.write(IP5306_REG_SYS_CTL0);
-  //Wire.write(0b110111);
-  Wire.write(190);//55);*/
-  // 0x37 = 0b110111 TCALL example
-  /*
-  [1] Boost EN (default 1) [EXM note: if 0 ESP32 will not boot from battery]
-  [1] Charger EN (1) [EXM note: did not observe difference]
-  [1] Reserved (1) [EXM note: did not observe difference]
-  [1] Insert load auto power EN (1) [EXM note: did not observe difference]
-  [1] BOOST output normally open ( 1) [EXM note: if 0 will shutdown when
-  ESP32 sleeps after 32s]
-  [1] Key off EN: (0) [EXM note: could not detect difference]
-  */ 
-  /*Wire.write(IP5306_REG_SYS_CTL1);
-  Wire.write(29);
-  Wire.write(IP5306_REG_SYS_CTL2);
-  Wire.write(100);*/
-  //Wire.write(0x1D); // Set HEX:1D DEC:29 BIN:11111
-  /*
-  [1] Turn off boost control signal selection: short press twice
-  [1] Switch WLED flashlight control signal selection: short press twice
-  [1] Short press switch boost: disabled
-  [0] Whether to turn on Boost after VIN is pulled out: opened
-  [1] Batlow 3.0V Low Power Shutdown EN: enabled
-  
-  M5.Lcd.printf("I2C updated\n");
-  */
+  M5.Power.deepSleep(300000000);
+}
+
+void deepSleep_expert() {
+  M5.Lcd.setBrightness(0);
+  M5.Lcd.sleep();
+  M5.Power.begin();
+  M5.Power.setPowerBoostKeepOn(true);
+  esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ALL_LOW);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_39,0);
+  esp_sleep_enable_timer_wakeup(40000000);
+  esp_deep_sleep_start();  
 }
 
 void loop(){
   
   delay(3000);
 
-  M5.Power.deepSleep(60000000);
-  //esp_sleep_enable_timer_wakeup(60000000);
-  //esp_deep_sleep_start();
+  deepSleep_expert();
 }
