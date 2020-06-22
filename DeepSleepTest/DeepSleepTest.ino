@@ -33,8 +33,8 @@ Pranav Cherukupalli <cherukupallip@gmail.com>
 #define BUTTON_PIN_BITMASK 0x4000000000 // GPIO38
 
 //RTC_DATA_ATTR int bootCount = 0;
-//RTC_SLOW_ATTR int bootCount = 0;
-int bootCount = 0;
+RTC_SLOW_ATTR int bootCount = 0;
+//int bootCount = 0;
 //FireNeopixels fnp;
 //FireBatteryLevel bat1;
 
