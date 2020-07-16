@@ -1,28 +1,13 @@
 /*
-Deep Sleep with External Wake Up
-=====================================
-This code displays how to use deep sleep with
-an external trigger as a wake up source and how
-to store data in RTC memory to use it over reboots
-
-This code is under Public Domain License.
-
-Hardware Connections
-======================
-Push Button to GPIO 33 pulled down with a 10K Ohm
-resistor
+Deep Sleep for ESP32
+====================
 
 NOTE:
 ======
 Only RTC IO can be used as a source for external wake
 source. They are pins: 0,2,4,12-15,25-27,32-39.
-
-Author:
-Pranav Cherukupalli <cherukupallip@gmail.com>
 */
 
-//#include "FireBatteryLevel.h"
-#include "pixels.h"
 
 #include <driver/rtc_io.h>
 #include <driver/adc.h>
@@ -35,8 +20,7 @@ Pranav Cherukupalli <cherukupallip@gmail.com>
 //RTC_DATA_ATTR int bootCount = 0;
 RTC_SLOW_ATTR int bootCount = 0;
 //int bootCount = 0;
-//FireNeopixels fnp;
-//FireBatteryLevel bat1;
+
 
 
 void print_wakeup_reason(){
@@ -80,11 +64,6 @@ void setup() {
   //M5.Lcd.printf("BAT: %d", M5.Power.getBatteryLevel());
   print_wakeup_reason();
 
-  Wire.beginTransmission(IP5306_ADDR);
-  Wire.write(IP5306_REG_SYS_CTL2);
-  //Wire.write(0b110111);
-  Wire.write(96);//55);
-  Wire.endTransmission();
   
   //read IP306 registers
   Wire.beginTransmission(IP5306_ADDR);
@@ -108,7 +87,7 @@ void setup() {
 void deepSleep_simple() {
   M5.Power.begin();
   M5.Power.setWakeupButton(BUTTON_A_PIN);
-  M5.Power.deepSleep(300000000);
+  M5.Power.deepSleep(300000000); // in microseconds
 }
 
 void deepSleep_expert() {
