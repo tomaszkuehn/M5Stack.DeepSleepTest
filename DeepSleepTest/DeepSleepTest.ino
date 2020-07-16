@@ -19,7 +19,7 @@ source. They are pins: 0,2,4,12-15,25-27,32-39.
 
 //RTC_DATA_ATTR int bootCount = 0;
 RTC_SLOW_ATTR int bootCount = 0;
-//int bootCount = 0;
+int bootCount = 0;
 
 
 
